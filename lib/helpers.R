@@ -385,9 +385,23 @@ upload_metrics_to_ckan <- function() {
     id = "open-government-portal-metrics"
   )
   
-  # TODO: match resource filenames (?) with the CSV files in output/
+  # Match resource filenames with the CSV files in output/
   # and then upload new versions to the equivalent resource.
   
-  
+  for (i in seq_along(metrics_package$resources)) { 
+    
+    resource_filename <- path_file(metrics_package$resources[[i]]$url)
+    resource_id <- metrics_package$resources[[i]]$id
+    
+    add_log_entry(str_c("Updating ", resource_id, " with ", resource_filename))
+    
+    resource_update(
+      id = resource_id,
+      path = path("output", resource_filename)
+    )
+    
+    Sys.sleep(0.3)
+    
+  }
   
 }
