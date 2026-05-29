@@ -109,7 +109,11 @@ get_matomo_visit_and_pageview_metrics <- function() {
         visits = "nb_visits",
         pageviews = "nb_pageviews",
         actions = "nb_actions",
-        
+      ) |> 
+      mutate(
+        visits = parse_number(visits),
+        pageviews = parse_number(pageviews),
+        actions = parse_number(actions)
       )
     
     multisite_stats
@@ -226,14 +230,31 @@ get_ckan_package_and_resource_metrics <- function() {
     }
     
     results <- results |> 
-      select(id, name, title, num_resources, type, organization, metadata_created, metadata_modified) |> 
+      select(id, name, title, num_resources, type, organization, metadata_created, metadata_modified,
+             downloads,
+             download_90_days,
+             visits,
+             visit_90_days
+             ) |> 
       unnest(
         organization,
         names_sep = "_"
       ) |> 
-      select(id, name, title, num_resources, type, organization_name, metadata_created, metadata_modified)
+      select(id, name, title, num_resources, type, organization_name, metadata_created, metadata_modified,
+             downloads,
+             download_90_days,
+             visits,
+             visit_90_days
+             )
     
-    results  
+    # Factor in the ZIP files for download-all (every package has +1 more resource than real life)
+    results <- results |> 
+      mutate(
+        num_resources = case_when(
+          num_resources > 0 ~ num_resources - 1,
+          .default = 0
+        )
+      )
     
   }
   
@@ -352,6 +373,34 @@ summarize_ckan_package_and_resource_metrics <- function(ckan_package_output) {
     ungroup() |> 
     select(! type)
   
+  
+  # Usage stats from Matomo on a per-package basis
+  packages_by_visits_and_downloads <- output |> 
+    select(
+      !id
+    ) |> 
+    select(
+      name,
+      title,
+      starts_with("visit"),
+      starts_with("download"),
+      everything()
+    ) |> 
+    mutate(
+      visits = as.integer(visits),
+      visit_90_days = as.integer(visit_90_days),
+      downloads = as.integer(downloads),
+      download_90_days = as.integer(download_90_days)
+    ) |> 
+    rename(
+      resources = "num_resources"
+    ) |> 
+    arrange(
+      desc(visits),
+      desc(downloads),
+      desc(metadata_modified)
+    )
+  
   # TODO: write this as a mappable purrr function
   
   packages_by_type |> 
@@ -371,6 +420,9 @@ summarize_ckan_package_and_resource_metrics <- function(ckan_package_output) {
   
   open_information_publications_by_year |> 
     write_out_csv("open_information_publications_by_year")
+  
+  packages_by_visits_and_downloads |> 
+    write_out_csv("packages_by_visits_and_downloads")
   
 }
 
