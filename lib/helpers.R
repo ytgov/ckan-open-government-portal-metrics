@@ -445,6 +445,15 @@ upload_metrics_to_ckan <- function() {
     resource_filename <- path_file(metrics_package$resources[[i]]$url)
     resource_id <- metrics_package$resources[[i]]$id
     
+    # Skip the "download all" ZIP resource
+    if(has_name(metrics_package$resources[[i]], "downloadall_datapackage_hash")) {
+      
+      add_log_entry(str_c("Skipping download all ZIP ", resource_id))
+      
+      next
+      
+    }
+    
     add_log_entry(str_c("Updating ", resource_id, " with ", resource_filename))
     
     resource_update(
