@@ -16,4 +16,5 @@ ckan_package_output <- get_ckan_package_and_resource_metrics()
 
 summarize_ckan_package_and_resource_metrics(ckan_package_output)
 
+#upload to ckan website
 upload_metrics_to_ckan()
