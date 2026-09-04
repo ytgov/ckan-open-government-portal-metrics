@@ -246,7 +246,16 @@ get_ckan_package_and_resource_metrics <- function() {
              visits,
              visit_90_days
              )
-    
+
+    # CKAN returns these as inconsistent types across pages (e.g. NA/logical for
+    # packages with no stats yet vs. integer/character for others), which breaks
+    # bind_rows() when combining pages. Coerce to character now; numeric parsing
+    # happens later in summarize_ckan_package_and_resource_metrics().
+    results <- results |>
+      mutate(
+        across(c(downloads, download_90_days, visits, visit_90_days), as.character)
+      )
+
     # Factor in the ZIP files for download-all (every package has +1 more resource than real life)
     results <- results |> 
       mutate(
